@@ -157,7 +157,7 @@ new p5((sketch) => {
           colorHueOffset += colorShiftDirection * sketch.width / 64;
         }
         else if(config.randomnessSource==="perlin"){
-          radiusOffset += (sketch.noise(sketch.frameCount/128,0,0)-1/2)*16;
+          radiusOffset += (sketch.noise(sketch.frameCount/128,0,0)-1/2)*4;
           colorHueOffset += (sketch.noise(sketch.frameCount/128,0,1)-1/2) * sketch.width / 64;
         }
     }
