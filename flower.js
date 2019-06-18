@@ -15,17 +15,19 @@ let config = {    //this won't stay constant like in original code, but config t
 
     // The lower this number, the bigger the circles become when you move down with your mouse
     mouseYDivider: 2,
-
-    noiseUsed: "original"
+    //can be "original" or "perlin"
+    randomnessSource: "perlin",
+    //how much randomness should be used for circle positions and their color.
+    amountOfChaosInOrder: 1
 
 };
 
-
+let addedCoords;
 let rings = [];
 let grow = 3;
 let colorShiftDirection = 1;
-
-
+let colorHueOffset = 0;
+let radiusOffset = 0;
 new p5((sketch) => {
 
     sketch.setup = () => {
@@ -50,8 +52,8 @@ new p5((sketch) => {
         const canvas = sketch.createCanvas(sketch.windowWidth, sketch.windowHeight);
 
         recreateRings();
-        flipGrowDirection();
-        colorShiftFlipper();
+        config.randomnessSource==="original"&&flipGrowDirection();
+        config.randomnessSource==="original"&&colorShiftFlipper();
         moveMouseAutomatically();
 
     };
@@ -70,7 +72,7 @@ new p5((sketch) => {
     };
 
 
-    let intensity = 128;
+    let intensity = 100;
 
     sketch.mouseWheel = (event) => {
 
@@ -82,21 +84,22 @@ new p5((sketch) => {
 
     function recreateRings() {
 
-        const startX = sketch.width / 2;
-        const startY = sketch.height / 2;
-        const addedCoords = [];
-
+        const startX = (sketch.width / 2).toFixed(1);
+        const startY = (sketch.height / 2).toFixed(1);
         rings = [];
+        addedCoords = [];
         rings.push(new Circle(startX, startY, config.rads));
+        addedCoords.push(startX+','+startY);
+
 
         function makeRings(x, y, level=0) {
 
             for(let i = 0; i < config.nodes; i++) {
 
-                let newX = x + config.rads / 2 * sketch.cos(2 * Math.PI * i / config.nodes);
-                let newY = y + config.rads / 2 * sketch.sin(2 * Math.PI * i / config.nodes);
+                let newX = (+x + config.rads / 2 * Math.cos(2 * Math.PI * i / config.nodes));
+                let newY = (+y + config.rads / 2 * Math.sin(2 * Math.PI * i / config.nodes));
 
-                let coords = newX + ',' + newY;
+                let coords = newX.toFixed(1) + ',' + newY.toFixed(1);
 
                 if (addedCoords.indexOf(coords) === -1) {
                     rings.push(new Circle(newX, newY, config.rads));
@@ -123,12 +126,20 @@ new p5((sketch) => {
         }
 
         draw() {
-            let color = sketch.map(sketch.mouseX, 0, sketch.width, 0, 255);
-            sketch.stroke(color, 150, intensity);
-            sketch.ellipse(this.x, this.y, sketch.mouseY / config.mouseYDivider, sketch.mouseY / config.mouseYDivider);
+            let color = sketch.map(sketch.mouseX+colorHueOffset, 0, sketch.width, 360, 720,false)+(sketch.noise(Date.now()/4098+this.x*53/51+this.y*67/23,this.x*41/47,this.y*91/67)-1/2)*128;
+            sketch.stroke(color%360, 150, intensity);
+            sketch.ellipse(
+              +this.x+(sketch.noise(Date.now()/4096+this.x*19/41+this.y*29/47,this.x*19/41,this.y*29/47)-1/2)*64,      //those random primes are to prevent noise coupling
+              +this.y+(sketch.noise(Date.now()/4095+this.x*23/43+this.y*31/51,this.x*23/43,this.y*31/51)-1/2)*64,
+              Math.abs(radiusOffset+(sketch.noise(Date.now()/4097+this.x*47/61+this.y*17/59,this.x*67/37,this.y*73/47)-1/2)*64+ sketch.mouseY) / config.mouseYDivider);
         }
 
     }
+
+    sketch.mouseMoved = () =>{
+        colorHueOffset = 0;
+        radiusOffset = 0;
+    };
 
     function flipGrowDirection() {
         grow = Math.random() < .5;
@@ -141,12 +152,13 @@ new p5((sketch) => {
     }
 
     function moveMouseAutomatically() {
-        sketch.mouseY += grow?2:-2;
-        sketch.mouseX += colorShiftDirection * sketch.width / 64;
-
-        if (sketch.mouseX < 0 || sketch.mouseX > sketch.width) {
-            sketch.mouseX = sketch.constrain(sketch.mouseX,0,sketch.width);
-            colorShiftDirection = !colorShiftDirection;
+        if(config.randomnessSource === "original"){
+          radiusOffset += grow?2:-2;
+          colorHueOffset += colorShiftDirection * sketch.width / 64;
+        }
+        else if(config.randomnessSource==="perlin"){
+          radiusOffset += (sketch.noise(sketch.frameCount/128,0,0)-1/2)*16;
+          colorHueOffset += (sketch.noise(sketch.frameCount/128,0,1)-1/2) * sketch.width / 64;
         }
     }
 
