@@ -21,14 +21,9 @@ let config = {    //this won't stay constant like in original code, but config t
 };
 
 
-
-let moved = false;
 let rings = [];
 let grow = 3;
 let colorShiftDirection = 1;
-let mouseOffsetX = 0;
-let mouseOffsetY = 0;
-
 
 
 new p5((sketch) => {
@@ -51,7 +46,6 @@ new p5((sketch) => {
         }
 
         config.maxLevel = config.maxLevel||Math.min(7,Math.round(largestScreenDimension / config.rads) - 1);
-
 
         const canvas = sketch.createCanvas(sketch.windowWidth, sketch.windowHeight);
 
@@ -95,9 +89,7 @@ new p5((sketch) => {
         rings = [];
         rings.push(new Circle(startX, startY, config.rads));
 
-        function makeRings(x, y, level) {
-
-            level = level || 0;
+        function makeRings(x, y, level=0) {
 
             for(let i = 0; i < config.nodes; i++) {
 
@@ -134,7 +126,6 @@ new p5((sketch) => {
             let color = sketch.map(sketch.mouseX, 0, sketch.width, 0, 255);
             sketch.stroke(color, 150, intensity);
             sketch.ellipse(this.x, this.y, sketch.mouseY / config.mouseYDivider, sketch.mouseY / config.mouseYDivider);
-            moved = false;
         }
 
     }
@@ -150,10 +141,13 @@ new p5((sketch) => {
     }
 
     function moveMouseAutomatically() {
-
         sketch.mouseY += grow?2:-2;
         sketch.mouseX += colorShiftDirection * sketch.width / 64;
 
+        if (sketch.mouseX < 0 || sketch.mouseX > sketch.width) {
+            sketch.mouseX = sketch.constrain(sketch.mouseX,0,sketch.width);
+            colorShiftDirection = !colorShiftDirection;
+        }
     }
 
     setInterval(moveMouseAutomatically,50);
