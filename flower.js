@@ -18,180 +18,139 @@ let rings = [];
 let grow = 3;
 let colorShiftDirection = 1;
 
-function setup() {
 
-    colorMode(HSB);
+new p5((sketch) => {
 
-    document.addEventListener('dblclick', function() {
-        fullscreen(!fullscreen());
-    });
+    sketch.setup = () => {
+
+        sketch.colorMode(sketch.HSB);
+        sketch.noFill();
+        document.addEventListener('dblclick', () => sketch.fullscreen(!sketch.fullscreen()));
 
 
-    let largestScreenDimention;
+        let largestScreenDimension = Math.max(sketch.windowWidth, sketch.windowHeight);
 
-    if (windowWidth > windowHeight) {
-        largestScreenDimention = windowWidth;
-    } else {
-        largestScreenDimention = windowHeight;
-    }
+        if (!rads) {
 
-    if (!rads) {
+            let dividingFactor = largestScreenDimension > 1000?5:3;
 
-        let dividingFactor;
+            rads = Math.round(largestScreenDimension / dividingFactor);
 
-        if (largestScreenDimention > 1000) {
-            dividingFactor = 5;
-        } else {
-            dividingFactor = 3;
         }
 
-        rads = Math.round(largestScreenDimention / dividingFactor);
+        if (!maxLevel) {
+            maxLevel = Math.min(7,Math.round(largestScreenDimension / rads) - 1);
+        }
 
-    }
+        const canvas = sketch.createCanvas(sketch.windowWidth, sketch.windowHeight);
 
-    if (!maxLevel) {
-        maxLevel = Math.round(largestScreenDimention / rads) - 1;
-        if (maxLevel > 7) maxLevel = 7;
-    }
+        recreateRings();
+        flipGrowDirection();
+        colorShiftFlipper();
+        moveMouseAutomatically();
 
-    const canvas = createCanvas(windowWidth, windowHeight);
+    };
 
-    recreateRings();
-    flipGrowDirection();
-    colorShiftFlipper();
-    moveMouseAutomatically();
+    sketch.windowResized = () => {
+        sketch.resizeCanvas(sketch.windowWidth, sketch.windowHeight);
+        recreateRings();
+    };
 
-}
+    sketch.draw = () => {
 
-function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
-    recreateRings();
-}
+        sketch.background(0, 0, 0, 0.08);
 
-function draw() {
+        rings.map(ring => ring.draw());
 
-    background(0, 0, 0, 0.08);
-
-    for(let i = 0; i < rings.length; i++){
-        rings[i].draw();
-    }
-
-}
+    };
 
 
-let intensity = 128
+    let intensity = 128;
 
-function mouseWheel(event) {
+    sketch.mouseWheel = (event) => {
 
-    rads -= event.delta
+        rads = sketch.constrain(rads-event.delta,0,500);
+        recreateRings()
 
-    if (rads < 0) {
-        rads = 0
-    } else if (rads > 500) {
-        rads = 500
-    }
-
-    recreateRings()
-
-}
+    };
 
 
-function recreateRings() {
+    function recreateRings() {
 
-    const startx = width / 2;
-    const starty = height / 2;
-    const addedCoords = []
+        const startX = sketch.width / 2;
+        const startY = sketch.height / 2;
+        const addedCoords = [];
 
-    rings = []
-    rings.push(new Circle(startx, starty, rads));
+        rings = [];
+        rings.push(new Circle(startX, startY, rads));
 
-    function makeRings(x, y, level) {
+        function makeRings(x, y, level) {
 
-        level = level | 0;
+            level = level || 0;
 
-        for(let i = 0; i < nodes; i++) {
+            for(let i = 0; i < nodes; i++) {
 
-            let newX = x + rads / 2 * cos(2 * PI * i / nodes);
-            let newY = y + rads / 2 * sin(2 * PI * i / nodes);
+                let newX = x + rads / 2 * sketch.cos(2 * Math.PI * i / nodes);
+                let newY = y + rads / 2 * sketch.sin(2 * Math.PI * i / nodes);
 
-            let coords = newX + ',' + newY;
+                let coords = newX + ',' + newY;
 
-            if (addedCoords.indexOf(coords) == -1) {
-                rings.push(new Circle(newX, newY, rads));
-                addedCoords.push(coords)
+                if (addedCoords.indexOf(coords) === -1) {
+                    rings.push(new Circle(newX, newY, rads));
+                    addedCoords.push(coords)
+                }
+
+                if (level < maxLevel) {
+                    makeRings(newX, newY, level + 1)
+                }
             }
+        }
 
-            if (level < maxLevel) {
-                makeRings(newX, newY, level + 1)
-            }
+        makeRings(startX, startY)
 
+    }
+
+
+    class Circle {
+
+        constructor(x, y, r) {
+            this.x = x;
+            this.y = y;
+            this.r = r;
+        }
+
+        draw() {
+            let color = sketch.map(sketch.mouseX, 0, sketch.width, 0, 255);
+            sketch.stroke(color, 150, intensity);
+            sketch.ellipse(this.x, this.y, sketch.mouseY / mouseYDivider, sketch.mouseY / mouseYDivider);
+            moved = false;
         }
 
     }
 
-    makeRings(startx, starty)
-
-}
-
-
-class Circle {
-
-    constructor(x, y, r) {
-        this.x = x;
-        this.y = y;
-        this.r = r;
+    function flipGrowDirection() {
+        grow = Math.random() < .5;
+        setTimeout(flipGrowDirection, sketch.random(400, 1200));
     }
 
-    draw() {
-        let color = 0;
-        moved = true;
-        color = map(mouseX, 0, width, 0, 255);
-        stroke(color, 150, intensity);
-        noFill();
-        ellipse(this.x, this.y, mouseY / mouseYDivider, mouseY / mouseYDivider);
-        moved = false;
+    function colorShiftFlipper() {
+        colorShiftDirection = sketch.random([-1, 1]);
+        setTimeout(colorShiftFlipper, sketch.random(400, 1200));
     }
 
-}
+    function moveMouseAutomatically() {
 
-function flipGrowDirection() {
-    grow = Math.random() < .5;
-    setTimeout(flipGrowDirection, random(400, 1200));
-}
+        sketch.mouseY += grow?2:-2;
+        sketch.mouseX += colorShiftDirection * sketch.width / 64;
 
-function colorShiftFlipper() {
-    colorShiftDirection = random([-1, 1]);
-    setTimeout(colorShiftFlipper, random(400, 1200));
-}
-
-function moveMouseAutomatically() {
-
-    if (grow) {
-        mouseY += 2
-    } else {
-        mouseY -= 2
-    }
-
-    mouseX += colorShiftDirection * width / 64;
-
-    if (mouseX < 0 || mouseX > width) {
-
-        if (mouseX < 0) {
-            mouseX = 0;
-        } else if (mouseX > width) {
-            mouseX = width;
+        if (sketch.mouseX < 0 || sketch.mouseX > sketch.width) {
+            sketch.constrain(sketch.mouseX,0,sketch.width);
+            colorShiftDirection = !colorShiftDirection;
         }
 
-        colorShiftDirection = !colorShiftDirection;
-
+        sketch.constrain(sketch.mouseY,0,sketch.height);
     }
 
-    if (mouseY < 0) {
-        mouseY = 0;
-    } else if (mouseY > height) {
-        mouseY = height;
-    }
+    setInterval(moveMouseAutomatically,50);
 
-    setTimeout(moveMouseAutomatically, 50)
-
-}
+}, "container");
