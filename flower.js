@@ -1,22 +1,34 @@
-// The amount of circles around each "center"
-// For the flower of life this is 6, but other values can give interesting shapes too
-const nodes = 6;
 
-// The distance between the circles
-// If set to `null`, will be automatically determined based on screen size
-let rads = null;
+let config = {    //this won't stay constant like in original code, but config things are in config
 
-// How many levels deep do we keep creating "circles around centers"
-// If set to `null`, will be automatically determined based on screen size
-let maxLevel = null;
+    // The amount of circles around each "center"
+    // For the flower of life this is 6, but other values can give interesting shapes too
+    nodes: 6,
 
-// The lower this number, the bigger the circles become when you move down with your mouse
-const mouseYDivider = 2;
+    // The distance between the circles
+    // If set to `null`, will be automatically determined based on screen size
+    rads: null,
+
+    // How many levels deep do we keep creating "circles around centers"
+    // If set to `null`, will be automatically determined based on screen size
+    maxLevel: null,
+
+    // The lower this number, the bigger the circles become when you move down with your mouse
+    mouseYDivider: 2,
+
+    noiseUsed: "original"
+
+};
+
+
 
 let moved = false;
 let rings = [];
 let grow = 3;
 let colorShiftDirection = 1;
+let mouseOffsetX = 0;
+let mouseOffsetY = 0;
+
 
 
 new p5((sketch) => {
@@ -30,17 +42,16 @@ new p5((sketch) => {
 
         let largestScreenDimension = Math.max(sketch.windowWidth, sketch.windowHeight);
 
-        if (!rads) {
+        if (!config.rads) {
 
             let dividingFactor = largestScreenDimension > 1000?5:3;
 
-            rads = Math.round(largestScreenDimension / dividingFactor);
+            config.rads = Math.round(largestScreenDimension / dividingFactor);
 
         }
 
-        if (!maxLevel) {
-            maxLevel = Math.min(7,Math.round(largestScreenDimension / rads) - 1);
-        }
+        config.maxLevel = config.maxLevel||Math.min(7,Math.round(largestScreenDimension / config.rads) - 1);
+
 
         const canvas = sketch.createCanvas(sketch.windowWidth, sketch.windowHeight);
 
@@ -69,7 +80,7 @@ new p5((sketch) => {
 
     sketch.mouseWheel = (event) => {
 
-        rads = sketch.constrain(rads-event.delta,0,500);
+        config.rads = sketch.constrain(config.rads-event.delta,0,500);
         recreateRings()
 
     };
@@ -82,25 +93,25 @@ new p5((sketch) => {
         const addedCoords = [];
 
         rings = [];
-        rings.push(new Circle(startX, startY, rads));
+        rings.push(new Circle(startX, startY, config.rads));
 
         function makeRings(x, y, level) {
 
             level = level || 0;
 
-            for(let i = 0; i < nodes; i++) {
+            for(let i = 0; i < config.nodes; i++) {
 
-                let newX = x + rads / 2 * sketch.cos(2 * Math.PI * i / nodes);
-                let newY = y + rads / 2 * sketch.sin(2 * Math.PI * i / nodes);
+                let newX = x + config.rads / 2 * sketch.cos(2 * Math.PI * i / config.nodes);
+                let newY = y + config.rads / 2 * sketch.sin(2 * Math.PI * i / config.nodes);
 
                 let coords = newX + ',' + newY;
 
                 if (addedCoords.indexOf(coords) === -1) {
-                    rings.push(new Circle(newX, newY, rads));
+                    rings.push(new Circle(newX, newY, config.rads));
                     addedCoords.push(coords)
                 }
 
-                if (level < maxLevel) {
+                if (level < config.maxLevel) {
                     makeRings(newX, newY, level + 1)
                 }
             }
@@ -122,7 +133,7 @@ new p5((sketch) => {
         draw() {
             let color = sketch.map(sketch.mouseX, 0, sketch.width, 0, 255);
             sketch.stroke(color, 150, intensity);
-            sketch.ellipse(this.x, this.y, sketch.mouseY / mouseYDivider, sketch.mouseY / mouseYDivider);
+            sketch.ellipse(this.x, this.y, sketch.mouseY / config.mouseYDivider, sketch.mouseY / config.mouseYDivider);
             moved = false;
         }
 
@@ -143,12 +154,6 @@ new p5((sketch) => {
         sketch.mouseY += grow?2:-2;
         sketch.mouseX += colorShiftDirection * sketch.width / 64;
 
-        if (sketch.mouseX < 0 || sketch.mouseX > sketch.width) {
-            sketch.constrain(sketch.mouseX,0,sketch.width);
-            colorShiftDirection = !colorShiftDirection;
-        }
-
-        sketch.constrain(sketch.mouseY,0,sketch.height);
     }
 
     setInterval(moveMouseAutomatically,50);
