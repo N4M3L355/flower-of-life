@@ -18,7 +18,7 @@ let config = {    //this won't stay constant like in original code, but config t
     //can be "original" or "perlin"
     randomnessSource: "perlin",
     //how much randomness should be used for circle positions and their color.
-    amountOfChaosInOrder: 1
+    amountOfChaosInOrder: 1,
 
 };
 
